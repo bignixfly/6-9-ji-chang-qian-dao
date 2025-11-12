@@ -2,21 +2,21 @@ name: Scheduled Check-In Job
 
 on:
   schedule:
-    - cron: '15 2 * * *'  # 每天 00:00 UTC 执行，调整为你需要的时间
-  workflow_dispatch:  # 允许手动触发
+    - cron: '15 2 * * *'  # 每天 10:15 北京时间执行（UTC+8 对应 02:15 UTC）
+  workflow_dispatch:  # 支持手动触发
 
 jobs:
   checkin:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
-      
+      uses: actions/checkout@v4
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16'  # 可以根据实际需要修改 Node.js 版本
+        node-version: '16'
 
     - name: Install dependencies
       run: |
@@ -25,10 +25,19 @@ jobs:
 
     - name: Run scheduled check-in
       run: |
-        node _worker.js  
+        node _worker.js
       env:
-        DOMAIN: ${{ secrets.DOMAIN }}  # 从 GitHub Secrets 中读取配置信息
+        DOMAIN: ${{ secrets.DOMAIN }}
         USERNAME: ${{ secrets.USERNAME }}
         PASSWORD: ${{ secrets.PASSWORD }}
         TG_TOKEN: ${{ secrets.TG_TOKEN }}
         TG_ID: ${{ secrets.TG_ID }}
+
+    - name: Update README with current time
+      run: |
+        echo "📅 **最后运行时间（北京时间）**: \`$(date -d '+8 hour' '+%Y-%m-%d %H:%M:%S')\`" > README.md
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add README.md
+        git commit -m "🕒 更新运行时间: $(date -d '+8 hour' '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git push
